@@ -10,7 +10,7 @@ common:
     prompt: hello
     nb_tokens: 1000  # nb of tokens to generate 
     sampling_mode: prob  # argmax
-    save_path: ./src/images/samples.txt  # relative to cwd
+    save_path: ./src/txts/samples.txt  # relative to cwd
   training:
     chkpt_path: ./checkpoints/checkpoint.pth  # relative to cwd
 
@@ -21,7 +21,7 @@ dataset:
 model:
   max_seq_len: 128  # N
   embed_dim: 768
-  mlp_hidden_dim: 768
+  mlp_hidden_dim: ${model.embed_dim}
   nb_layers: 12
   nb_heads: 8
 

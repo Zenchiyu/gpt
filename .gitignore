@@ -1,0 +1,8 @@
+data/
+__pycache__/
+wandb/
+outputs/
+old/
+checkpoints/
+.vscode/
+.coverage
