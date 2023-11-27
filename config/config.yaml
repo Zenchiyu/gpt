@@ -1,0 +1,29 @@
+wandb:
+  project: gpt
+  mode: online
+
+wandb_watch: True  # log more info
+
+common:
+  nb_epochs: 200
+  sampling:
+    prompt: hello
+    nb_tokens: 1000  # nb of tokens to generate 
+    sampling_mode: prob  # argmax
+    save_path: ./src/images/samples.txt  # relative to cwd
+  training:
+    chkpt_path: ./checkpoints/checkpoint.pth  # relative to cwd
+
+dataset:
+  batch_size: 128
+  num_workers: 0
+
+model:
+  max_seq_len: 128  # N
+  embed_dim: 768
+  mlp_hidden_dim: 768
+  nb_layers: 12
+  nb_heads: 8
+
+optim:  # Adam optimizer
+  lr: 1e-4
