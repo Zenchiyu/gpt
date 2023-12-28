@@ -10,7 +10,7 @@ common:
     prompt: hello
     nb_tokens: 1000  # nb of tokens to generate 
     sampling_mode: prob  # argmax
-    save_path: ./src/txts/samples.txt  # relative to cwd
+    save_path: ./results/txts/samples.txt  # relative to cwd
   training:
     chkpt_path: ./checkpoints/checkpoint.pth  # relative to cwd
 

@@ -1,15 +1,37 @@
-# Adapted from template made by Eloi Alonso
 from collections import namedtuple
 from typing import Optional, Tuple
 
-from torch.utils.data import default_collate, DataLoader, Dataset, random_split
-from torchvision.datasets import CelebA, FashionMNIST, CIFAR10
+from torch.utils.data import DataLoader, Dataset, random_split
 import torchvision.transforms as T
 
 
-DataInfo = namedtuple('DataInfo', 'image_channels image_size num_classes sigma_data')
+DataInfo = namedtuple('DataInfo', 'image_channels image_size sigma_data')
 DataLoaders = namedtuple('DataLoaders', 'train valid')
 
+
+class CharDataset(Dataset):
+    """
+    Emits batches of characters.
+
+    Adapted from "https://github.com/karpathy/minGPT".
+    """
+    def __init__(self, config, data):
+
+        chars = ... # get characters from the input data
+        self.stoi = { ch:i for i,ch in enumerate(chars) } # map characters to integer indices
+        pass
+
+    def get_vocab_size(self):
+        raise NotImplementedError()
+
+    def __len__(self):
+        raise NotImplementedError()
+
+    def __getitem__(self, idx):
+        # grab a chunk of (block_size + 1) characters from the data
+        # encode every character to an integer
+        # return the chunk and the shifted version as tensors
+        pass
 
 def load_dataset_and_make_dataloaders(
         dataset_name: str,
@@ -24,28 +46,15 @@ def load_dataset_and_make_dataloaders(
     return dl, data_info
 
 
-def load_dataset(dataset_name='FashionMNIST', root_dir='data') -> Tuple[Dataset, Dataset, DataInfo]:
+def load_dataset(dataset_name='Shakespeare', root_dir='data') -> Tuple[Dataset, Dataset, DataInfo]:
 
     match dataset_name:
         
-        case 'FashionMNIST':
+        case 'Shakespeare':
             t = T.Compose([T.ToTensor(), T.Pad(2), T.Normalize(mean=(0.5,), std=(0.5,))])
             train_dataset = FashionMNIST(root_dir, download=True, transform=t)
             train_dataset, valid_dataset = random_split(train_dataset, [50000, 10000])  # both come from the training set
             num_classes = 10
-        
-        case 'CelebA':
-            t = T.Compose([T.ToTensor(), T.CenterCrop(178), T.Resize(128, antialias=True), T.Normalize(mean=(0.5,), std=(0.5,))])
-            train_dataset = CelebA(root_dir, download=True, transform=t)
-            train_dataset, valid_dataset = random_split(train_dataset, [150000, 12770])
-            num_classes = None
-
-        case 'CIFAR10':
-            t = T.Compose([T.ToTensor(), T.Normalize(mean=(0.5,), std=(0.5,))])
-            train_dataset = CIFAR10(root_dir, download=True, transform=t)
-            train_dataset, valid_dataset = random_split(train_dataset, [40000, 10000])
-            num_classes = 10
-        
         case other:
             raise RuntimeError('Unknown dataset: ' + other)
 
@@ -54,20 +63,18 @@ def load_dataset(dataset_name='FashionMNIST', root_dir='data') -> Tuple[Dataset,
     assert h == w
     sigma_data = x.std()
     
-    return train_dataset, valid_dataset, DataInfo(c, h, num_classes, sigma_data)
+    return train_dataset, valid_dataset, DataInfo(c, h, sigma_data)
 
 
 def make_dataloaders(
         train_dataset: Dataset,
         valid_dataset: Dataset,
-        num_classes: Optional[int],
         batch_size: int,
         num_workers: int = 0,
         pin_memory: bool = False    
     ) -> DataLoaders:
     
-    collate_fn = default_collate if num_classes is not None else lambda batch: (default_collate(batch)[0], None)  # a way to add None y-label
-    kwargs = {'collate_fn': collate_fn, 'num_workers': num_workers, 'persistent_workers': (num_workers > 0), 'pin_memory': pin_memory}
+    kwargs = {'num_workers': num_workers, 'persistent_workers': (num_workers > 0), 'pin_memory': pin_memory}
     
     return DataLoaders(
         train=DataLoader(train_dataset, batch_size=batch_size, shuffle=True, **kwargs),

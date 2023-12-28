@@ -2,7 +2,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from models.transformer import GPT
+from models.unet import UNet
+from diffusion import Diffusion
 from data import load_dataset_and_make_dataloaders
 
 from collections import namedtuple
@@ -13,8 +14,10 @@ from typing import Any
 
 
 Init = namedtuple('Init', 'model optimizer criterion '+\
-                  'dl info device nb_epochs_finished '+\
+                  'diffusion dl info device nb_epochs_finished '+\
                   'begin_date save_path chkpt_path')
+InitSample = namedtuple('InitSample', 'model diffusion info dl '+\
+                        'sampling_method path cfgscale_str')
 
 def create_save_directories(cfg: DictConfig) -> tuple[Path, Path]:
     """
@@ -70,8 +73,23 @@ def init(cfg: DictConfig, verbose: bool=True) -> Init:
         num_workers=cfg.dataset.num_workers,    # can use more workers if GPU is waiting for the batches
         pin_memory=gpu,                         # use pin memory if plan to move the data to GPU
     )
-    # TODO: create model
-    model = # TODO
+    # XXX: At evaluation time to compute the FID we need to use the
+    # "true test set" using train=False.
+    
+    diffusion = Diffusion(device, info.sigma_data, cfg.diffusion.sigma_min, cfg.diffusion.sigma_max)
+    # XXX: info.sigma_data is an estimation of the std based on a "huge" batch
+
+    ## Model and criterion
+    model = UNet(
+        image_channels=info.image_channels,
+        min_channels=cfg.model.min_channels,
+        depths=cfg.model.depths,
+        cond_channels=cfg.model.cond_channels,
+        self_attentions=cfg.model.self_attentions,
+        self_attention_bridge=cfg.model.self_attention_bridge,
+        nb_heads=cfg.model.nb_heads,
+        nb_classes=info.num_classes                             # will +1 fake label for CFG
+    )
     criterion = nn.MSELoss()
     model.to(device=device)
     criterion.to(device=device)
@@ -87,6 +105,25 @@ def init(cfg: DictConfig, verbose: bool=True) -> Init:
 
     print(f"\n\nDataset: {cfg.dataset.name}, Using device: {device}")
 
-    return Init(model, optimizer, criterion,
+    return Init(model, optimizer, criterion, diffusion,
                 dl, info, device, nb_epochs_finished,
                 begin_date, save_path, chkpt_path)
+
+def init_sampling(cfg: DictConfig) -> InitSample:
+    seed = torch.random.initial_seed()  # retrieve current seed
+
+    # Initialization
+    init_tuple = init(cfg)  # TODO: make it more efficient
+    model, diffusion, info, dl = init_tuple.model, init_tuple.diffusion, init_tuple.info, init_tuple.dl
+    del init_tuple
+    try:
+        sampling_method = cfg.common.sampling.method
+    except:
+        sampling_method = "euler"
+    dataset_name = str.lower(cfg.dataset.name)
+    cfgscale_str = str(cfg.common.sampling.cfg_scale).replace('.','_')
+    path = Path(f"./results/images/{dataset_name}/{sampling_method}/")
+    
+    # Don't use the checkpoint seed for sampling
+    torch.manual_seed(seed)
+    return InitSample(model, diffusion, info, dl, sampling_method, path, cfgscale_str)
