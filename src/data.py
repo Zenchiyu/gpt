@@ -12,19 +12,17 @@ DataLoaders = namedtuple('DataLoaders', 'train valid test')
 
 class CharDataset(Dataset):
     """
-    Emits batches of characters.
-
-    Adapted from "https://github.com/karpathy/minGPT".
+    Emits a sequence of token ids and its shifted version.
     """
     def __init__(self,
-                 chunk_size: int,
                  data: str,
+                 chunk_size: int,
                  split: str="train",
                  train_ratio: float=90/100
             ) -> None:
         # TODO: random split, clean code
         idxs = np.cumsum([0, int(train_ratio*len(data)), int((1-train_ratio)*len(data)/2), np.ceil((1-train_ratio)*len(data)/2)], dtype=int)
-        self.data = dict(zip(["train", "val", "test"], [data[b:e] for b, e in zip(idxs[:-1], idxs[1:])]))
+        self.data = dict(zip(DataLoaders._fields, [data[b:e] for b, e in zip(idxs[:-1], idxs[1:])]))
         
         chars = list(dict.fromkeys(self.data["train"]))  # get characters from the input data
 
@@ -50,27 +48,23 @@ class CharDataset(Dataset):
 
 
 def load_dataset_and_make_dataloaders(
-        dataset_name: str,
-        root_dir: str,
-        batch_size: int,
+        dataset_path: str=str(Path("data/shakespeare.txt")),
+        chunk_size: int=128,
+        batch_size: int=128,
         num_workers: int = 0,
         pin_memory: bool = False    
     ) -> DataLoaders:
 
-    train_dataset, valid_dataset, test_dataset = load_dataset(dataset_name, root_dir)
+    train_dataset, valid_dataset, test_dataset = load_dataset(dataset_path=dataset_path, chunk_size=chunk_size)
     dl = make_dataloaders(train_dataset, valid_dataset, test_dataset, batch_size, num_workers, pin_memory)
     return dl
 
-def load_dataset(dataset_name='Shakespeare', root_dir='data') -> Tuple[Dataset, Dataset]:
-    with open(Path(root_dir) / f"{dataset_name}.txt", "r") as f:
+def load_dataset(dataset_path: str, chunk_size: int) -> Tuple[Dataset, Dataset]:
+    with open(dataset_path, "r") as f:
         data = "".join(f.readlines())
     
-    train_dataset = CharDataset(10, data, split="train")
-    valid_dataset = CharDataset(10, data, split="val")
-    test_dataset = CharDataset(10, data, split="test")
-    
+    train_dataset, valid_dataset, test_dataset = [CharDataset(data, chunk_size, split=split) for split in DataLoaders._fields]
     return train_dataset, valid_dataset, test_dataset
-
 
 def make_dataloaders(
         train_dataset: Dataset,
