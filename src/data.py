@@ -32,13 +32,13 @@ class CharDataset(Dataset):
         self.itos = {i:ch for ch, i in self.stoi.items()}
         self.ids = torch.tensor(list(map(lambda s: self.stoi[s], self.data[split])))
 
-    def get_vocab_size(self):
+    def get_vocab_size(self) -> int:
         return len(self.stoi)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.ids)-self.chunk_size
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx) -> tuple[torch.Tensor, torch.Tensor]:
         # grab a chunk of chunk_size characters from the data
         # encode every character to an integer
         # return the chunk and the shifted version as tensors
@@ -59,7 +59,7 @@ def load_dataset_and_make_dataloaders(
     dl = make_dataloaders(train_dataset, valid_dataset, test_dataset, batch_size, num_workers, pin_memory)
     return dl
 
-def load_dataset(dataset_path: str, chunk_size: int) -> Tuple[Dataset, Dataset]:
+def load_dataset(dataset_path: str, chunk_size: int) -> Tuple[Dataset, ...]:
     with open(dataset_path, "r") as f:
         data = "".join(f.readlines())
     

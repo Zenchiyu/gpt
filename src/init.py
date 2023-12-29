@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-# from models.transformer import Transformer
+from models.transformer import Transformer
 from data import load_dataset_and_make_dataloaders
 
 from collections import namedtuple
@@ -75,6 +75,7 @@ def init(cfg: DictConfig, verbose: bool=True) -> Init:
     
     ## Model and criterion
     model = Transformer(
+        vocab_size=dl.train.dataset.get_vocab_size(),
         max_seq_len=cfg.model.max_seq_len,      # = chunk size
         embed_dim=cfg.model.embed_dim,
         mlp_hidden_dim=cfg.model.mlp_hidden_dim,
