@@ -5,16 +5,18 @@ wandb:
 wandb_watch: True  # log more info
 
 common:
-  nb_epochs: 200
+  nb_steps: 6000  # nb of gradient steps
   sampling:
     prompt: hello
     nb_tokens: 1000  # nb of tokens to generate 
     sampling_mode: prob  # argmax
+    temperature: 1
     save_path: ./results/txts/samples.txt  # relative to cwd
   training:
     chkpt_path: ./checkpoints/checkpoint.pth  # relative to cwd
 
 dataset:
+  path: ./data/shakespeare.txt
   chunk_size: ${model.max_seq_len}
   batch_size: 128
   num_workers: 0

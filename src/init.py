@@ -2,8 +2,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from models.unet import UNet
-from diffusion import Diffusion
+# from models.transformer import Transformer
 from data import load_dataset_and_make_dataloaders
 
 from collections import namedtuple
@@ -14,10 +13,10 @@ from typing import Any
 
 
 Init = namedtuple('Init', 'model optimizer criterion '+\
-                  'diffusion dl info device nb_epochs_finished '+\
+                  'dl device nb_steps_finished '+\
                   'begin_date save_path chkpt_path')
-InitSample = namedtuple('InitSample', 'model diffusion info dl '+\
-                        'sampling_method path cfgscale_str')
+InitSample = namedtuple('InitSample', 'model dl '+\
+                        'sampling_method path temperature_str')
 
 def create_save_directories(cfg: DictConfig) -> tuple[Path, Path]:
     """
@@ -37,19 +36,19 @@ def load_chkpt(chkpt_path: Path, device: str|torch.device) -> tuple[Any, int, st
 
     Credits: https://fleuret.org/dlc/materials/dlc-handout-11-4-persistence.pdf
     """
-    chkpt, nb_epochs_finished, begin_date, seed = None, 0, str(date.today()), torch.initial_seed()  # by default: random seed
+    chkpt, nb_steps_finished, begin_date, seed = None, 0, str(date.today()), torch.initial_seed()  # by default: random seed
     try:
         chkpt = torch.load(chkpt_path, map_location=device)
-        nb_epochs_finished = chkpt.get("nb_epochs_finished", nb_epochs_finished)
+        nb_steps_finished = chkpt.get("nb_steps_finished", nb_steps_finished)
         begin_date = chkpt.get("begin_date", begin_date)
         seed = chkpt.get("seed", seed)
         torch.manual_seed(seed)
-        print(f"\nStarting from checkpoint with {nb_epochs_finished} finished epochs"+\
+        print(f"\nStarting from checkpoint with {nb_steps_finished} finished steps"+\
               f", and initial seed {seed} (=> same datasets).")
     except FileNotFoundError:
         print(f"Starting from scratch with random initial seed {seed}.")
 
-    return chkpt, nb_epochs_finished, begin_date
+    return chkpt, nb_steps_finished, begin_date
 
 def init(cfg: DictConfig, verbose: bool=True) -> Init:
     if verbose:
@@ -63,39 +62,31 @@ def init(cfg: DictConfig, verbose: bool=True) -> Init:
     save_path, chkpt_path = create_save_directories(cfg)
 
     ## Load checkpoint if exists
-    chkpt, nb_epochs_finished, begin_date = load_chkpt(chkpt_path, device)
+    chkpt, nb_steps_finished, begin_date = load_chkpt(chkpt_path, device)
 
     ## DataLoaders
-    dl, info = load_dataset_and_make_dataloaders(
-        dataset_name=cfg.dataset.name,          # e.g. "FashionMNIST"
-        root_dir=cfg.dataset.root_dir,          # directory to store the data 
-        batch_size=cfg.dataset.batch_size,      # e.g. 32
+    dl = load_dataset_and_make_dataloaders(
+        dataset_path=cfg.dataset.path,          # where the dataset is stored as .txt file
+        chunk_size=cfg.dataset.chunk_size,      # e.g. 128 (= max seq length)
+        batch_size=cfg.dataset.batch_size,      # e.g. 128
         num_workers=cfg.dataset.num_workers,    # can use more workers if GPU is waiting for the batches
         pin_memory=gpu,                         # use pin memory if plan to move the data to GPU
     )
-    # XXX: At evaluation time to compute the FID we need to use the
-    # "true test set" using train=False.
     
-    diffusion = Diffusion(device, info.sigma_data, cfg.diffusion.sigma_min, cfg.diffusion.sigma_max)
-    # XXX: info.sigma_data is an estimation of the std based on a "huge" batch
-
     ## Model and criterion
-    model = UNet(
-        image_channels=info.image_channels,
-        min_channels=cfg.model.min_channels,
-        depths=cfg.model.depths,
-        cond_channels=cfg.model.cond_channels,
-        self_attentions=cfg.model.self_attentions,
-        self_attention_bridge=cfg.model.self_attention_bridge,
-        nb_heads=cfg.model.nb_heads,
-        nb_classes=info.num_classes                             # will +1 fake label for CFG
+    model = Transformer(
+        max_seq_len=cfg.model.max_seq_len,      # = chunk size
+        embed_dim=cfg.model.embed_dim,
+        mlp_hidden_dim=cfg.model.mlp_hidden_dim,
+        nb_layers=cfg.model.nb_layers,
+        nb_heads=cfg.model.nb_heads
     )
     criterion = nn.CrossEntropyLoss()
     model.to(device=device)
     criterion.to(device=device)
 
     ## Optimizer
-    optimizer = optim.Adam(model.parameters(), lr=cfg.optim.lr)
+    optimizer = optim.Adam(model.parameters(), lr=cfg.optim.lr)  # TODO: learning rate schedule
 
     ## Load saved model and optimizer state dict if chkpt exists
     if chkpt:
@@ -105,25 +96,26 @@ def init(cfg: DictConfig, verbose: bool=True) -> Init:
 
     print(f"\n\nDataset: {cfg.dataset.name}, Using device: {device}")
 
-    return Init(model, optimizer, criterion, diffusion,
-                dl, info, device, nb_epochs_finished,
+    return Init(model, optimizer, criterion,
+                dl, device, nb_steps_finished,
                 begin_date, save_path, chkpt_path)
 
+# TODO: fix this
 def init_sampling(cfg: DictConfig) -> InitSample:
     seed = torch.random.initial_seed()  # retrieve current seed
 
     # Initialization
     init_tuple = init(cfg)  # TODO: make it more efficient
-    model, diffusion, info, dl = init_tuple.model, init_tuple.diffusion, init_tuple.info, init_tuple.dl
+    model, dl = init_tuple.model, init_tuple.dl
     del init_tuple
     try:
         sampling_method = cfg.common.sampling.method
     except:
         sampling_method = "euler"
     dataset_name = str.lower(cfg.dataset.name)
-    cfgscale_str = str(cfg.common.sampling.cfg_scale).replace('.','_')
-    path = Path(f"./results/images/{dataset_name}/{sampling_method}/")
+    temperature_str = str(cfg.common.sampling.temperature).replace('.','_')
+    path = Path(f"./results/txts/{dataset_name}/{sampling_method}/")
     
     # Don't use the checkpoint seed for sampling
     torch.manual_seed(seed)
-    return InitSample(model, diffusion, info, dl, sampling_method, path, cfgscale_str)
+    return InitSample(model, dl, sampling_method, path, temperature_str)
