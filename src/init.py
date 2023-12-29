@@ -90,7 +90,7 @@ def init(cfg: DictConfig, verbose: bool=True) -> Init:
         nb_heads=cfg.model.nb_heads,
         nb_classes=info.num_classes                             # will +1 fake label for CFG
     )
-    criterion = nn.MSELoss()
+    criterion = nn.CrossEntropyLoss()
     model.to(device=device)
     criterion.to(device=device)
 

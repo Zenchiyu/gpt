@@ -15,11 +15,12 @@ common:
     chkpt_path: ./checkpoints/checkpoint.pth  # relative to cwd
 
 dataset:
+  chunk_size: ${model.max_seq_len}
   batch_size: 128
   num_workers: 0
 
 model:
-  max_seq_len: 128  # N
+  max_seq_len: 128  # chunk size N
   embed_dim: 768
   mlp_hidden_dim: ${model.embed_dim}
   nb_layers: 12
