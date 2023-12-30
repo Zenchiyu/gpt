@@ -95,7 +95,7 @@ def init(cfg: DictConfig, verbose: bool=True) -> Init:
         optimizer.load_state_dict(chkpt["optimizer_state_dict"])
         print("\nSuccessfully loaded model & optimizer state dicts.")
 
-    print(f"\n\nDataset: {cfg.dataset.name}, Using device: {device}")
+    print(f"\n\nDataset: {Path(cfg.dataset.path).stem}, Using device: {device}")
 
     return Init(model, optimizer, criterion,
                 dl, device, nb_steps_finished,
@@ -113,7 +113,7 @@ def init_sampling(cfg: DictConfig) -> InitSample:
         sampling_method = cfg.common.sampling.method
     except:
         sampling_method = "euler"
-    dataset_name = str.lower(cfg.dataset.name)
+    dataset_name = str.lower(Path(cfg.dataset.path).stem)
     temperature_str = str(cfg.common.sampling.temperature).replace('.','_')
     path = Path(f"./results/txts/{dataset_name}/{sampling_method}/")
     

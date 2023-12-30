@@ -2,7 +2,6 @@ import hydra
 import numpy as np
 import torch
 
-from diffusion import Diffusion
 from init import init_sampling
 from utils import save, expand
 
