@@ -23,10 +23,13 @@ class Transformer(nn.Module):
         i = torch.arange(embed_dim)[None, :]
         # TODO: self.max_seq_len or 10_000 ?
         angles = pos/(10_000**((2 * (i//2))/embed_dim))  # if i is even, then i+1 has the same angle
-        self.pe = torch.empty(max_seq_len, embed_dim, dtype=torch.float)
-        self.pe[:, 0::2] = torch.sin(angles[:, 0::2])
-        self.pe[:, 1::2] = torch.cos(angles[:, 1::2])
-        self.pe = self.pe.unsqueeze(0)
+        pe = torch.empty(max_seq_len, embed_dim, dtype=torch.float)
+        pe[:, 0::2] = torch.sin(angles[:, 0::2])
+        pe[:, 1::2] = torch.cos(angles[:, 1::2])
+        pe = pe.unsqueeze(0)
+        self.register_buffer('pe', pe.unsqueeze(0))
+        # https://fleuret.org/dlc/materials/dlc-handout-6-6-using-GPUs.pdf
+        # https://fleuret.org/dlc/materials/dlc-handout-10-3-NVP.pdf
 
         self.layers = nn.Sequential(
             nn.Dropout(p=0.1),  # TODO: find dropout used in literature
@@ -43,7 +46,7 @@ class Transformer(nn.Module):
             nb_tokens: int=50,
             sampling_mode: str="prob",
             temperature: float=1) -> torch.Tensor:  # TODO: add temperature
-        y = torch.empty((x.shape[0], nb_tokens), dtype=torch.int)
+        y = x.new_empty((x.shape[0], nb_tokens), dtype=torch.int)
         match sampling_mode:
             case _:  # prob
                 for l in tqdm(range(nb_tokens)):

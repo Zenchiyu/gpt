@@ -11,12 +11,13 @@ from omegaconf import DictConfig
 def sample(
         model: torch.nn.Module,
         dl: DataLoaders,
+        device: torch.device|str,
         context: str,  # TODO: multiple prompts, would require a padding token
         nb_tokens: int=50,
         sampling_mode: str="prob",
         temperature: float=1
     ) -> torch.Tensor:
-    tokenize = lambda ctx: torch.tensor(list(map(lambda s: dl.train.dataset.stoi[s], ctx)))
+    tokenize = lambda ctx: torch.tensor(list(map(lambda s: dl.train.dataset.stoi[s], ctx)), device=device)
     tokens_to_string = lambda tokens: "".join(list(map(lambda i: dl.train.dataset.itos[i.item()], tokens)))
     model.eval()
 
@@ -30,10 +31,10 @@ def sample(
 @torch.inference_mode()
 @hydra.main(version_base=None, config_path="../config", config_name="config")
 def sampler(cfg: DictConfig):
-    model, dl, sampling_mode, path, temperature_str = init_sampling(cfg)
+    model, dl, device, sampling_mode, path, temperature_str = init_sampling(cfg)
     # Sample
     completions = sample(
-                    model, dl,
+                    model, dl, device,
                     context=cfg.common.sampling.context,
                     nb_tokens=cfg.common.sampling.nb_tokens,
                     sampling_mode=sampling_mode,
