@@ -24,6 +24,6 @@ class Transformer(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # x: batch of seq. of token ids B x L
+        # x: batch of seq. of token ids N x L
         x = self.dropout(self.wte(x) + self.wpe(x))
         return self.layers(x)
