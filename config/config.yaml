@@ -9,7 +9,7 @@ common:
   sampling:
     context: O God, O God!   # prompt
     nb_tokens: 100  # nb of tokens to generate. TODO: K, V caching
-    sampling_mode: prob  # prob, argmax
+    sampling_mode: top5  # prob, argmax
     temperature: 1
     save_path: ./results/txts/samples.txt  # relative to cwd
   training:
