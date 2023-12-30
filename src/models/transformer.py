@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 
+from torch.distributions.categorical import Categorical
+from tqdm import tqdm
 from .blocks import TransformerBlock
 
 
@@ -29,12 +31,26 @@ class Transformer(nn.Module):
         self.layers = nn.Sequential(
             nn.Dropout(p=0.1),  # TODO: find dropout used in literature
             *[TransformerBlock(embed_dim=embed_dim, nb_heads=nb_heads, mlp_hidden_dim=mlp_hidden_dim) for _ in range(nb_layers)],
-            nn.LayerNorm(embed_dim),  # TODO: to verify. input is batch_size x max_seq_len x embed_dim
+            nn.LayerNorm(embed_dim),
             nn.Linear(embed_dim, vocab_size)  # logits: batch_size x max_seq_len x vocab_size
         )
 
     def wpe(self, x: torch.Tensor) -> torch.Tensor:
         return self.pe[:, :x.shape[-2]]
+
+    def generate(self,
+            x: torch.Tensor,
+            nb_tokens: int=50,
+            sampling_mode: str="prob",
+            temperature: float=1) -> torch.Tensor:  # TODO: add temperature
+        y = torch.empty((x.shape[0], nb_tokens), dtype=torch.int)
+        match sampling_mode:
+            case _:  # prob
+                for l in tqdm(range(nb_tokens)):
+                    logits = self(x)[0, :, -1]  # 1 x V x L
+                    y[:, l] = Categorical(logits=logits).sample()
+                    x = torch.cat([x, y[:, l][:, None]], dim=1)
+        return y
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x: batch of seq. of token ids N x L

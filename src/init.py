@@ -16,7 +16,7 @@ Init = namedtuple('Init', 'model optimizer criterion '+\
                   'dl device nb_steps_finished '+\
                   'begin_date save_path chkpt_path')
 InitSample = namedtuple('InitSample', 'model dl '+\
-                        'sampling_method path temperature_str')
+                        'sampling_mode path temperature_str')
 
 def create_save_directories(cfg: DictConfig) -> tuple[Path, Path]:
     """
@@ -110,13 +110,14 @@ def init_sampling(cfg: DictConfig) -> InitSample:
     model, dl = init_tuple.model, init_tuple.dl
     del init_tuple
     try:
-        sampling_method = cfg.common.sampling.method
+        sampling_mode = cfg.common.sampling.sampling_mode
     except:
-        sampling_method = "euler"
+        sampling_mode = "prob"
     dataset_name = str.lower(Path(cfg.dataset.path).stem)
     temperature_str = str(cfg.common.sampling.temperature).replace('.','_')
-    path = Path(f"./results/txts/{dataset_name}/{sampling_method}/")
+    path = Path(f"./results/txts/{dataset_name}/{sampling_mode}/")
+    path.mkdir(parents=True, exist_ok=True)
     
     # Don't use the checkpoint seed for sampling
     torch.manual_seed(seed)
-    return InitSample(model, dl, sampling_method, path, temperature_str)
+    return InitSample(model, dl, sampling_mode, path, temperature_str)
