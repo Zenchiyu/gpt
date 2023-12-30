@@ -47,6 +47,11 @@ class Transformer(nn.Module):
             temperature: float=1) -> torch.Tensor:  # TODO: add temperature
         y = x.new_empty((x.shape[0], nb_tokens), dtype=torch.int)
         match sampling_mode:
+            case "argmax":  # prob
+                for l in tqdm(range(nb_tokens)):
+                    logits = self(x)[0, :, -1]  # 1 x V x L
+                    y[:, l] = torch.argmax(logits)
+                    x = torch.cat([x, y[:, l][:, None]], dim=1)
             case _:  # prob
                 for l in tqdm(range(nb_tokens)):
                     logits = self(x)[0, :, -1]  # 1 x V x L
