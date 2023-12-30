@@ -26,7 +26,6 @@ class Transformer(nn.Module):
         pe = torch.empty(max_seq_len, embed_dim, dtype=torch.float)
         pe[:, 0::2] = torch.sin(angles[:, 0::2])
         pe[:, 1::2] = torch.cos(angles[:, 1::2])
-        pe = pe.unsqueeze(0)
         self.register_buffer('pe', pe.unsqueeze(0))
         # https://fleuret.org/dlc/materials/dlc-handout-6-6-using-GPUs.pdf
         # https://fleuret.org/dlc/materials/dlc-handout-10-3-NVP.pdf
