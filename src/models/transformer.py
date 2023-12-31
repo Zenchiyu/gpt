@@ -38,7 +38,7 @@ class Transformer(nn.Module):
         )
 
     def wpe(self, x: torch.Tensor) -> torch.Tensor:
-        return self.pe[:, :x.shape[-2]]
+        return self.pe[:, :x.shape[-1]]
 
     def generate(self,
             x: torch.Tensor,
@@ -47,14 +47,20 @@ class Transformer(nn.Module):
             temperature: float=1) -> torch.Tensor:  # TODO: add temperature
         y = x.new_empty((x.shape[0], nb_tokens), dtype=torch.int)
         match sampling_mode:
-            case "argmax":  # prob
+            case "argmax":
                 for l in tqdm(range(nb_tokens)):
-                    logits = self(x)[0, :, -1]  # 1 x V x L
+                    logits = self(x)[0, :, -1]  # V
                     y[:, l] = torch.argmax(logits)
+                    x = torch.cat([x, y[:, l][:, None]], dim=1)
+            case "top5":
+                for l in tqdm(range(nb_tokens)):
+                    logits = self(x)[0, :, -1]  # V
+                    new_logits, indices = torch.topk(logits, 5)
+                    y[:, l] = indices[Categorical(logits=new_logits).sample()]
                     x = torch.cat([x, y[:, l][:, None]], dim=1)
             case _:  # prob
                 for l in tqdm(range(nb_tokens)):
-                    logits = self(x)[0, :, -1]  # 1 x V x L
+                    logits = self(x)[0, :, -1]  # V
                     y[:, l] = Categorical(logits=logits).sample()
                     x = torch.cat([x, y[:, l][:, None]], dim=1)
         return y
@@ -64,4 +70,5 @@ class Transformer(nn.Module):
         # -> batch of seq. of token embeddings N x L x C
         # -> batch of seq. of logits N x L x V
         # -> N x V x L
-        return self.layers(self.wte(x) + self.wpe(x)).transpose(-1, -2)
+        y = self.wte(x) + self.wpe(x)
+        return self.layers(y).transpose(-1, -2)

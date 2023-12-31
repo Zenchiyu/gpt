@@ -39,8 +39,6 @@ def train(cfg: DictConfig,
 
             if cfg.wandb.mode == "online":
                 wandb.log({"step": step, "loss": losses[-1]})
-            if step == cfg.common.nb_steps:
-                return
             
             if step % 100 == 0:
                 # Save checkpoint at each 100 finished steps
@@ -54,6 +52,9 @@ def train(cfg: DictConfig,
                 if cfg.wandb.mode == "online":
                     copy_chkpt(run, begin_date, chkpt_path)
 
+            if step == cfg.common.nb_steps:
+                return
+            
 @hydra.main(version_base=None, config_path="../config", config_name="config")
 def trainer(cfg: DictConfig):
     run_seed = torch.random.initial_seed()  # retrieve current seed in 
