@@ -16,6 +16,7 @@ class Transformer(nn.Module):
             nb_heads=int
     ) -> None:
         super().__init__()
+        self.max_seq_len = max_seq_len
         self.wte = nn.Embedding(vocab_size, embed_dim)  # token embedding
 
         # Positional encoding
@@ -51,18 +52,18 @@ class Transformer(nn.Module):
                 for l in tqdm(range(nb_tokens)):
                     logits = self(x)[0, :, -1]  # V
                     y[:, l] = torch.argmax(logits)
-                    x = torch.cat([x, y[:, l][:, None]], dim=1)
+                    x = torch.cat([x, y[:, l][:, None]], dim=1)[:, -self.max_seq_len:]
             case "top5":
                 for l in tqdm(range(nb_tokens)):
                     logits = self(x)[0, :, -1]  # V
                     new_logits, indices = torch.topk(logits, 5)
                     y[:, l] = indices[Categorical(logits=new_logits).sample()]
-                    x = torch.cat([x, y[:, l][:, None]], dim=1)
+                    x = torch.cat([x, y[:, l][:, None]], dim=1)[:, -self.max_seq_len:]
             case _:  # prob
                 for l in tqdm(range(nb_tokens)):
                     logits = self(x)[0, :, -1]  # V
                     y[:, l] = Categorical(logits=logits).sample()
-                    x = torch.cat([x, y[:, l][:, None]], dim=1)
+                    x = torch.cat([x, y[:, l][:, None]], dim=1)[:, -self.max_seq_len:]
         return y
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -70,5 +71,4 @@ class Transformer(nn.Module):
         # -> batch of seq. of token embeddings N x L x C
         # -> batch of seq. of logits N x L x V
         # -> N x V x L
-        y = self.wte(x) + self.wpe(x)
-        return self.layers(y).transpose(-1, -2)
+        return self.layers(self.wte(x) + self.wpe(x)).transpose(-1, -2)
