@@ -38,7 +38,7 @@ class Transformer(nn.Module):
         )
 
     def wpe(self, x: torch.Tensor) -> torch.Tensor:
-        return self.pe[:, :x.shape[-2]]
+        return self.pe[:, :x.shape[-1]]
 
     def generate(self,
             x: torch.Tensor,
@@ -70,4 +70,5 @@ class Transformer(nn.Module):
         # -> batch of seq. of token embeddings N x L x C
         # -> batch of seq. of logits N x L x V
         # -> N x V x L
-        return self.layers(self.wte(x) + self.wpe(x)).transpose(-1, -2)
+        y = self.wte(x) + self.wpe(x)
+        return self.layers(y).transpose(-1, -2)
