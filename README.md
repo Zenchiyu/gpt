@@ -85,6 +85,12 @@ where `<sampling-mode>` can either be `argmax`, `prob` or `top5`.
 
   - You can change the [softmax] temperature in `prob` and `top5` by adding `common.sampling.temperature=<temperature>` where `<temperature>` has to be positive. If not specified, the default is $1$. A high temperature would lead to more diverse generated tokens/characters (closer to the uniform distribution) but may not make sense when combined.
 
+  Example:
+  ```
+  python src/sampler.py common.sampling.nb_tokens=1000 common.sampling.sampling_mode=top5 common.samp
+ling.temperature=1
+  ```
+
 - Refer to [Hydra](https://hydra.cc/docs/intro/) for more information.
 
 
