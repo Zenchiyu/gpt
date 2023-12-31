@@ -89,7 +89,7 @@ where `<sampling-mode>` can either be `argmax`, `prob` or `top5`.
 
 - K, V caching
 - Evaluating using the validation and test set
-- Monitor oerplexity
+- Monitor perplexity
 - Gradient clipping and learning rate decay
 - Monitor overfitting
 
@@ -97,3 +97,5 @@ where `<sampling-mode>` can either be `argmax`, `prob` or `top5`.
 - [Attention Is All You Need](https://arxiv.org/abs/1706.03762)
 - [Formal Algorithms for Transformers](https://arxiv.org/abs/2207.09238)
 - [Deep Learning course](https://fleuret.org/dlc/materials/dlc-handout-13-3-transformers.pdf)
+- https://github.com/pytorch/pytorch
+- https://wandb.ai
