@@ -87,8 +87,7 @@ where `<sampling-mode>` can either be `argmax`, `prob` or `top5`.
 
   Example:
   ```
-  python src/sampler.py common.sampling.nb_tokens=1000 common.sampling.sampling_mode=top5 common.samp
-ling.temperature=1
+  python src/sampler.py common.sampling.nb_tokens=1000 common.sampling.sampling_mode=top5 common.sampling.temperature=1
   ```
 
 - Refer to [Hydra](https://hydra.cc/docs/intro/) for more information.
