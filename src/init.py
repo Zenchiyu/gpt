@@ -101,7 +101,6 @@ def init(cfg: DictConfig, verbose: bool=True) -> Init:
                 dl, device, nb_steps_finished,
                 begin_date, save_path, chkpt_path)
 
-# TODO: fix this
 def init_sampling(cfg: DictConfig) -> InitSample:
     seed = torch.random.initial_seed()  # retrieve current seed
 

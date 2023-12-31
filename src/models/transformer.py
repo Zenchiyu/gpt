@@ -45,7 +45,8 @@ class Transformer(nn.Module):
             x: torch.Tensor,
             nb_tokens: int=50,
             sampling_mode: str="prob",
-            temperature: float=1) -> torch.Tensor:  # TODO: add temperature
+            temperature: float=1) -> torch.Tensor:
+        assert temperature > 0, "temperature has to be positive"
         y = x.new_empty((x.shape[0], nb_tokens), dtype=torch.int)
         match sampling_mode:
             case "argmax":
@@ -57,11 +58,12 @@ class Transformer(nn.Module):
                 for l in tqdm(range(nb_tokens)):
                     logits = self(x)[0, :, -1]  # V
                     new_logits, indices = torch.topk(logits, 5)
+                    new_logits /= temperature
                     y[:, l] = indices[Categorical(logits=new_logits).sample()]
                     x = torch.cat([x, y[:, l][:, None]], dim=1)[:, -self.max_seq_len:]
             case _:  # prob
                 for l in tqdm(range(nb_tokens)):
-                    logits = self(x)[0, :, -1]  # V
+                    logits = self(x)[0, :, -1]/temperature  # V
                     y[:, l] = Categorical(logits=logits).sample()
                     x = torch.cat([x, y[:, l][:, None]], dim=1)[:, -self.max_seq_len:]
         return y

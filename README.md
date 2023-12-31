@@ -80,13 +80,19 @@ where `<sampling-mode>` can either be `argmax`, `prob` or `top5`.
 
 - **Training:** You can deactivate weights and biases logs by adding `wandb.mode=disabled`.
 
-- **Sampling:** You can change the sampling mode by adding `common.sampling.sampling_mode=<sampling-mode>` where `<sampling-mode>` can either be `argmax`, `prob` or `top5`. If not specified, the default is the mode from the configuration file (e.g. `argmax`).
+- **Sampling:** 
+  - You can change the sampling mode by adding `common.sampling.sampling_mode=<sampling-mode>` where `<sampling-mode>` can either be `argmax`, `prob` or `top5`. If not specified, the default is the mode from the configuration file (e.g. `argmax`). Note that we also added a [softmax] temperature parameter in the `top5` sampling mode which may differ from its usual formulation.
+
+  - You can change the [softmax] temperature in `prob` and `top5` by adding `common.sampling.temperature=<temperature>` where `<temperature>` has to be positive. If not specified, the default is $1$. A high temperature would lead to more diverse generated tokens/characters (closer to the uniform distribution) but may not make sense when combined.
 
 - Refer to [Hydra](https://hydra.cc/docs/intro/) for more information.
 
 
 # TODO list
 
+- Clean code
+- To implement Top-p (Nucleus sampling)
+- Fix train, validation, test datasets
 - K, V caching
 - Evaluating using the validation and test set
 - Monitor perplexity
@@ -97,5 +103,6 @@ where `<sampling-mode>` can either be `argmax`, `prob` or `top5`.
 - [Attention Is All You Need](https://arxiv.org/abs/1706.03762)
 - [Formal Algorithms for Transformers](https://arxiv.org/abs/2207.09238)
 - [Deep Learning course](https://fleuret.org/dlc/materials/dlc-handout-13-3-transformers.pdf)
+- [Lena Voita generation strategies](https://lena-voita.github.io/nlp_course/language_modeling.html#generation_strategies)
 - https://github.com/pytorch/pytorch
 - https://wandb.ai
