@@ -5,7 +5,6 @@ wandb:
 wandb_watch: True  # log more info
 
 common:
-  nb_steps: 6000  # nb of gradient steps
   sampling:
     context: O God, O God!   # prompt
     nb_tokens: 100  # nb of tokens to generate. TODO: K, V caching
@@ -13,6 +12,7 @@ common:
     temperature: 1
     save_path: ./results/txts/samples.txt  # relative to cwd
   training:
+    nb_steps: 6000  # nb of gradient steps
     chkpt_path: ./checkpoints/checkpoint.pth  # relative to cwd
 
 dataset:

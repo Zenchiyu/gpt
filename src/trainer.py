@@ -19,7 +19,7 @@ def train(cfg: DictConfig,
 
     step = nb_steps_finished
     losses = []
-    pbar = tqdm(total=cfg.common.nb_steps)
+    pbar = tqdm(total=cfg.common.training.nb_steps)
     pbar.update(step)
     while True:
         for X, Y in dl.train:
@@ -52,7 +52,7 @@ def train(cfg: DictConfig,
                 if cfg.wandb.mode == "online":
                     copy_chkpt(run, begin_date, chkpt_path)
 
-            if step == cfg.common.nb_steps:
+            if step == cfg.common.training.nb_steps:
                 return
             
 @hydra.main(version_base=None, config_path="../config", config_name="config")

@@ -56,9 +56,8 @@ class Transformer(nn.Module):
                     x = torch.cat([x, y[:, l][:, None]], dim=1)[:, -self.max_seq_len:]
             case "top5":
                 for l in tqdm(range(nb_tokens)):
-                    logits = self(x)[0, :, -1]  # V
+                    logits = self(x)[0, :, -1]/temperature  # V
                     new_logits, indices = torch.topk(logits, 5)
-                    new_logits /= temperature
                     y[:, l] = indices[Categorical(logits=new_logits).sample()]
                     x = torch.cat([x, y[:, l][:, None]], dim=1)[:, -self.max_seq_len:]
             case _:  # prob
